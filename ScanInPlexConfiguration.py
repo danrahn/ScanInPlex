@@ -110,14 +110,14 @@ class ScanInPlexConfiguration:
         icon_path = self.get_pms_path()
         applies_to = self.get_appliesTo_path(sections)
         pythonw_path = self.get_pythonw_path()
-        scan_in_plex = Common.adjacent_file('ScanInPlex.py')
+        scanner = Common.adjacent_file('Scanner.py')
         
         if self.is_admin:
-            return self.create_registry_entries_as_admin(base_key, icon_path, applies_to, pythonw_path, scan_in_plex)
+            return self.create_registry_entries_as_admin(base_key, icon_path, applies_to, pythonw_path, scanner)
         else:
-            return self.create_registry_entries_from_file(base_key, icon_path, applies_to, pythonw_path, scan_in_plex)
+            return self.create_registry_entries_from_file(base_key, icon_path, applies_to, pythonw_path, scanner)
 
-    def create_registry_entries_as_admin(self, base_key, icon_path, applies_to, pythonw_path, scan_in_plex):
+    def create_registry_entries_as_admin(self, base_key, icon_path, applies_to, pythonw_path, scanner):
         """
         Uses REG ADD to add the right registry keys. Avoids the UAC and registry prompts,
         but can only be run as an administrator
@@ -127,7 +127,7 @@ class ScanInPlexConfiguration:
             f'REG ADD {base_key} /v "Icon" /t REG_SZ /d "\\"{icon_path}\\",0"',
             f'REG ADD {base_key} /v "AppliesTo" /t  REG_SZ /d "{applies_to}"',
             f'REG ADD {base_key} /v "MultiSelectModel" /t REG_SZ /d "Document"',
-            f'REG ADD {base_key}\\command /ve /t REG_SZ /d "\\"{pythonw_path}\\" \\"{scan_in_plex}\\" -s -d \\"%1\\""'
+            f'REG ADD {base_key}\\command /ve /t REG_SZ /d "\\"{pythonw_path}\\" \\"{scanner}\\" -d \\"%1\\""'
         ]
 
         if self.verbose:
@@ -148,7 +148,7 @@ class ScanInPlexConfiguration:
         return True
 
 
-    def create_registry_entries_from_file(self, base_key, icon_path, applies_to, pythonw_path, scan_in_plex):
+    def create_registry_entries_from_file(self, base_key, icon_path, applies_to, pythonw_path, scanner):
         """
         Adds registry entries by creating a .reg file and executing it. Used as
         a backup for when the script is not run with administrator privileges
@@ -157,7 +157,7 @@ class ScanInPlexConfiguration:
         # .reg files need extra escapes
         icon_path = icon_path.replace('\\', '\\\\')
         pythonw_path = pythonw_path.replace('\\', '\\\\')
-        scan_in_plex = scan_in_plex.replace('\\', '\\\\')
+        scanner = scanner.replace('\\', '\\\\')
 
         text  = f'Windows Registry Editor Version 5.00\n\n'
 
@@ -168,7 +168,7 @@ class ScanInPlexConfiguration:
         text += f'"MultiSelectModel"="Document"\n\n'
 
         text += f'[{base_key}\\command]\n'
-        text += f'@="\\"{pythonw_path}\\" \\"{scan_in_plex}\\" -s -d \\"%1\\""\n'
+        text += f'@="\\"{pythonw_path}\\" \\"{scanner}\\" -d \\"%1\\""\n'
 
         if self.verbose:
             print('\n\nRegistry modifications:\n')

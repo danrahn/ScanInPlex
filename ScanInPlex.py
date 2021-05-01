@@ -1,51 +1,13 @@
 import argparse
 import json
 import os
+import Scanner
 import ScanInPlexCommon as Common
 from ScanInPlexConfiguration import ScanInPlexConfiguration
 import UninstallScanInPlex as Uninstall
 import subprocess
 import sys
 import traceback
-
-
-class ScanInPlex:
-    def __init__(self, cmd_args):
-        self.valid = True
-        print(cmd_args)
-        if 'directory' not in cmd_args:
-            self.valid = False
-            print_error('Directory not specified for scan')
-        
-        self.dir = cmd_args.directory
-    
-    def scan(self):
-        config_file = Common.adjacent_file('config.json')
-        if not os.path.exists(config_file):
-            sys.exit(0)
-
-        config_string = ''
-        with open(config_file, 'r') as f:
-            config_string = ''.join(f.readlines()).lower()
-
-        mappings = json.loads(config_string)
-        section = -1
-        dir_lower = self.dir.lower()
-        for section in mappings['sections']:
-            for path in section['paths']:
-                if dir_lower.startswith(path):
-                    section = section['section']
-                    break
-            if section != -1:
-                break
-
-        if section == -1:
-            sys.exit(0)
-
-        exe = mappings['exe']
-        cmd = f'"{exe}" -s -c {section} -d "{self.dir}"'
-        CREATE_NO_WINDOW = 0x08000000 # Don't show any output
-        subprocess.call(cmd, creationflags=CREATE_NO_WINDOW)
 
 class ScanInPlexRouter:
     def __init__(self):
@@ -57,6 +19,8 @@ class ScanInPlexRouter:
             return
     
     def run(self):
+        if not self.valid:
+            return
         parser = argparse.ArgumentParser(usage='ScanInPlex.py [-h] [-c [-p HOST] [-t TOKEN] [-v | -q]] | [-s -d DIR] | -u [-q]')
         parser.add_argument('-c', '--configure', action="store_true", help="Configure ScanInPlex")
         parser.add_argument('-p', '--host', help='Plex host (e.g. http://localhost:32400)')
@@ -75,12 +39,9 @@ class ScanInPlexRouter:
             print_error('Cannot specify multiple top-level commands (configure, scan, uninstall)')
             return
         if cmd_args.configure:
-            config = ScanInPlexConfiguration(cmd_args)
-            config.run()
+            ScanInPlexConfiguration(cmd_args).run()
         elif cmd_args.scan:
-            scanner = ScanInPlex(cmd_args)
-            if scanner.valid:
-                scanner.scan()
+            Scanner.ScanInPlex(cmd_args).scan()
         elif cmd_args.uninstall:
             Uninstall.UninstallScanInPlex(cmd_args).run()
 
@@ -89,6 +50,4 @@ def print_error(msg):
     print(f'Exiting...')
 
 if __name__ == '__main__':
-    router = ScanInPlexRouter()
-    if router.valid:
-        router.run()
+    ScanInPlexRouter().run()

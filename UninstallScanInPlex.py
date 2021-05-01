@@ -10,7 +10,6 @@ class UninstallScanInPlex:
     def run(self):
         if self.cmd_args == None:
             parser = argparse.ArgumentParser()
-            parser.add_argument('-u', '--uninstall', action='store_true', help='Uninstall Scan in Plex')
             parser.add_argument('-q', '--quiet', help='Don\'t prompt the user to confirm')
             self.cmd_args = parser.parse_args()
         
