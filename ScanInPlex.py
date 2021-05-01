@@ -1,212 +1,86 @@
 import argparse
 import json
 import os
-import requests
-import urllib
-import yaml
+from ScanInPlexConfiguration import ScanInPlexConfiguration
+import subprocess
+import sys
+import traceback
 
-class ScanInPlexConfiguration:
-    def __init__(self):
-        self.get_config()
 
-    def get_config(self):
-        """Reads the config file from disk, asking the user for input for any missing items"""
-
-        config_file = adjacent_file('config.yml')
-        config = None
+class ScanInPlex:
+    def __init__(self, cmd_args):
+        self.valid = True
+        print(cmd_args)
+        if 'directory' not in cmd_args:
+            self.valid = False
+            print_error('Directory not specified for scan')
+        
+        self.dir = cmd_args.directory
+    
+    def scan(self):
+        config_file = os.path.join(os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))), 'config.json')
         if not os.path.exists(config_file):
-            print('WARN: Could not fine config.yml in the same directory as this script. Falling back to commandline/user input')
-        else:
-            with open(config_file, encoding='utf-8') as f:
-                config = yaml.load(f, Loader=yaml.SafeLoader)
+            sys.exit(0)
 
-        if not config:
-            config = {}
+        config_string = ''
+        with open(config_file, 'r') as f:
+            config_string = ''.join(f.readlines()).lower()
 
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--host')
-        parser.add_argument('-t', '--token')
+        mappings = json.loads(config_string)
+        section = -1
+        dir_lower = self.dir.lower()
+        for section in mappings['sections']:
+            for path in section['paths']:
+                if dir_lower.startswith(path):
+                    section = section['section']
+                    break
+            if section != -1:
+                break
+
+        if section == -1:
+            sys.exit(0)
+
+        exe = mappings['exe']
+        cmd = f'"{exe}" -s -c {section} -d "{self.dir}"'
+        CREATE_NO_WINDOW = 0x08000000 # Don't show any output
+        subprocess.call(cmd, creationflags=CREATE_NO_WINDOW)
+
+class ScanInPlexRouter:
+    def __init__(self):
+        self.valid = True
+        if os.name.lower() == 'windows':
+            self.valid = False
+            print_error(f'os "{os.name}" detected, Windows required.')
+            os.system('pause')
+            return
+    
+    def run(self):
+        parser = argparse.ArgumentParser(usage='ScanInPlex.py [-h] [-c [-p HOST] [-t TOKEN]] | [-s -d DIR]')
+        parser.add_argument('-c', '--configure', action="store_true", help="Configure ScanInPlex")
+        parser.add_argument('-p', '--host', help='Plex host (e.g. http://localhost:32400)')
+        parser.add_argument('-t', '--token', help='Plex token')
+
+        parser.add_argument('-s', '--scan', help='Scan a folder in Plex', action="store_true")
+        parser.add_argument('-d', '--directory', help='Folder to scan')
 
         cmd_args = parser.parse_args()
-        self.host = self.get_config_value('host', config, cmd_args, 'http://localhost:32400')
-        self.token = self.get_config_value('token', config, cmd_args)
-        self.exe_path = None
-
-
-    def run(self):
-        sections = self.get_library_mappings()
-        if sections == None:
+        if cmd_args.configure and cmd_args.scan:
+            print_error('Cannot specify both configure and scan')
             return
+        if cmd_args.configure:
+            config = ScanInPlexConfiguration(cmd_args)
+            config.run()
+        elif cmd_args.scan:
+            scanner = ScanInPlex(cmd_args)
+            if scanner.valid:
+                scanner.scan()
 
-        if len(sections) == 0:
-            print('Couldn\'t find any sections. Have you added libraries to Plex?')
-            return None
-        
-        print('\nFound library mappings:\n')
-        for section in sections:
-            print(f'\tSection {section["section"]}:')
-            for section_path in section['paths']:
-                print(f'\t\t{section_path}')
-            print()
-        
-        if not self.get_yes_no('Do you want to use the following mappings'):
-            print('Exiting...')
-            return
-        self.create_registry_entries(sections)
-
-
-    def get_library_mappings(self):
-        sections = self.get_json_response('/library/sections', { 'X-Plex-Features' : 'external-media,indirect-media' })
-        if sections == None:
-            print('Sorry, something went wrong processing library sections. Make sure your host and token are properly set')
-            return None
-
-        mappings = []
-
-        if 'Directory' not in sections:
-            print('Malformed response from host, exiting...')
-            return None
-
-        for section in sections['Directory']:
-            mappings.append({ 'section' : section['key'], 'paths' : [entry['path'] for entry in section['Location']] })
-        return mappings
-
-
-    def create_registry_entries(self, sections):
-        """
-        Adds the right registry entries to enable the context menu entries
-        
-        It currently does this by create a temporary .reg file and executing it.
-        It might be cleaner to invoke REG ADD commands via os.system, but this works too
-        """
-
-        text  = 'Windows Registry Editor Version 5.00\n\n'
-
-        text += '[HKEY_CLASSES_ROOT\\Directory\\shell\\ScanInPlex]\n'
-        text += '@="Scan in Plex"\n'
-        text += '"Icon"="\\"' + self.get_pms_path().replace('\\', '\\\\') + '\\",0"\n'
-        text += '"AppliesTo"="' + self.get_appliesTo_path(sections) + '"\n' # backslashes must be escaped
-        text += '"MultiSelectModel"="Document"\n\n'
-
-        text += '[HKEY_CLASSES_ROOT\\Directory\\shell\\ScanInPlex\\command]\n'
-        text += '@="\\"' + self.get_exe_path().replace('\\', '\\\\') + '\\" \\"%1\\""\n'
-
-        print('Adding registry entries. This may launch a UAC dialog...', end='', flush=True)
-        reg_temp = '_scanInPlex.tmp.reg'
-        try:
-            with open(reg_temp, 'w') as reg:
-                reg.writelines([text])
-        except Exception as e:
-            print('Error adding registry entries:')
-            raise e
-        
-        os.system(f'.\\{reg_temp}')
-        os.remove(reg_temp)
-        print(' Done!')
-
-
-    def get_pms_path(self):
-        """
-        Attempts to find the path to Plex Media Server.exe to use its icon in the context menu
-
-        If not found, prompt the user to enter the full path the the executable
-        """
-        for program_files in ['PROGRAMFILES(X86)', 'PROGRAMFILES']:
-            if program_files in os.environ:
-                pms = os.path.join(os.environ[program_files], 'Plex', 'Plex Media Server', 'Plex Media Server.exe')
-                if os.path.exists(pms):
-                    return pms
-
-        pms = input('Could not find "Plex Media Server.exe", please enter the full path: ')
-        while not os.path.exists(pms):
-            pms = input("That path doesn't exist, please enter the complete path to Plex Media Server.exe (e.g. 'C:\\Program Files\\Plex\\Plex Media Server\\Plex Media Server.exe') ")
-        return pms
-
-
-    def get_appliesTo_path(self, sections):
-        """
-        Return the AppliesTo registry value based on the given sections
-        """
-
-        applies_to = ''
-        for section in sections:
-            for path in section['paths']:
-                applies_to += ' OR System.ItemPathDisplay:~=' + path.replace('\\', '\\\\')
-        return applies_to[4:]
-
-    def get_exe_path(self):
-        """
-        Returns the path to the self-build ScanInPlex.exe
-        """
-
-        if self.exe_path:
-            return self.exe_path
-        if 'LOCALAPPDATA' in os.environ:
-            self.exe_path = os.path.join(os.environ['LOCALAPPDATA'], 'ScanInPlex', 'ScanInPlex.exe')
-            return self.exe_path
-        self.exe_path = input('Could not find suitable destination for the ScanInPlex executable. Please enter a directory to save it:\n> ')
-        while not os.path.isdir(self.exe_path):
-            self.exe_path = input('Destination folder does not exist. Please enter a valid directory: ')
-        return self.exe_path
-
-
-    def get_config_value(self, key, config, cmd_args=None, default=''):
-        cmd_arg = None
-        if cmd_args != None and key in cmd_args:
-            cmd_arg = cmd_args.__dict__[key]
-        
-        if key in config and config[key] != None:
-            if cmd_arg != None:
-                # Command-line args shadow config file
-                print(f'WARN: Duplicate argument "{key}" found in both command-line arguments and config file. Using command-line value ("{cmd_args.__dict__[key]}")')
-                return cmd_arg
-            return config[key]
-        
-        if cmd_arg != None:
-            return cmd_arg
-
-        if len(default) != 0:
-            return default
-        
-        return input(f'\nCould not find "{key}" and no default is available.\n\nPlease enter a value for "{key}": ')
-
-
-    def get_json_response(self, url, params={}):
-        response = requests.get(self.url(url, params), headers={ 'Accept' : 'application/json' })
-        try:
-            data = json.loads(response.content)['MediaContainer']
-        except:
-            print('Error: Unexpected JSON response:\n')
-            print(response.content)
-            print()
-            data = None
-        response.close()
-        return data
-
-
-    def url(self, base, params={}):
-        real_url = f'{self.host}{base}'
-        sep = '?'
-        for key, value in params.items():
-            real_url += f'{sep}{key}={urllib.parse.quote(value)}'
-            sep = '&'
-        
-        return f'{real_url}{sep}X-Plex-Token={self.token}'
-
-
-    def get_yes_no(self, prompt):
-        while True:
-            response = input(f'{prompt} (y/n)? ')
-            ch = response.lower()[0] if len(response) > 0 else 'x'
-            if ch in ['y', 'n']:
-                return ch == 'y'
-
-
-def adjacent_file(filename):
-    """Returns the full path to the given file assuming it's in the same directory as the script"""
-
-    return os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + os.sep + filename
+def print_error(msg):
+    print(f'ERROR: {msg}')
+    print(f'Exiting...')
 
 if __name__ == '__main__':
-    config = ScanInPlexConfiguration()
-    config.run()
+    print('starting...')
+    router = ScanInPlexRouter()
+    if router.valid:
+        router.run()

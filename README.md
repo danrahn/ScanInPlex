@@ -4,7 +4,9 @@ The Scan in Plex script adds a 'Scan in Plex' context menu entry in Windows Expl
 
 ## Usage
 
-`python ScanInPlex.py [args]`
+`python ScanInPlex.py -h | -c [-p HOST] [-t TOKEN] | -s -d DIRECTORY`
+
+To set up ScanInPlex, run `python ScanInPlex.py -c` (see [Configuration](#Configuration) below)
 
 ## Requirements
 
@@ -18,3 +20,10 @@ Value | Command line | Description
 ---|---|---
 host | `--host` | The host of the Plex server. Defaults to http://localhost:32400
 token | `-t`, `--token` | Your Plex token. Se Plex's official documentation for [Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
+
+## Implementation Details
+
+This script has three main parts:
+1. Query your Plex server to grab all your library sections and the folders mapped to those sections
+2. Create the necessary registry entries to [create the shortcut menu handlers](https://docs.microsoft.com/en-us/windows/win32/shell/context-menu-handlers).
+3. Create a configuration file that ScanInPlex will reference to properly invoke `Plex Media Scanner.exe`
