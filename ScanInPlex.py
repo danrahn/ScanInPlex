@@ -1,7 +1,9 @@
 import argparse
 import json
 import os
+import ScanInPlexCommon as Common
 from ScanInPlexConfiguration import ScanInPlexConfiguration
+import UninstallScanInPlex as Uninstall
 import subprocess
 import sys
 import traceback
@@ -18,7 +20,7 @@ class ScanInPlex:
         self.dir = cmd_args.directory
     
     def scan(self):
-        config_file = os.path.join(os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))), 'config.json')
+        config_file = Common.adjacent_file('config.json')
         if not os.path.exists(config_file):
             sys.exit(0)
 
@@ -55,7 +57,7 @@ class ScanInPlexRouter:
             return
     
     def run(self):
-        parser = argparse.ArgumentParser(usage='ScanInPlex.py [-h] [-c [-p HOST] [-t TOKEN] [-v | -q]] | [-s -d DIR]')
+        parser = argparse.ArgumentParser(usage='ScanInPlex.py [-h] [-c [-p HOST] [-t TOKEN] [-v | -q]] | [-s -d DIR] | -u [-q]')
         parser.add_argument('-c', '--configure', action="store_true", help="Configure ScanInPlex")
         parser.add_argument('-p', '--host', help='Plex host (e.g. http://localhost:32400)')
         parser.add_argument('-t', '--token', help='Plex token')
@@ -65,9 +67,12 @@ class ScanInPlexRouter:
         parser.add_argument('-s', '--scan', help='Scan a folder in Plex', action="store_true")
         parser.add_argument('-d', '--directory', help='Folder to scan')
 
+        parser.add_argument('-u', '--uninstall', action="store_true", help='Uninstall Scan in Plex (delete regkeys)')
+
         cmd_args = parser.parse_args()
-        if cmd_args.configure and cmd_args.scan:
-            print_error('Cannot specify both configure and scan')
+        count = sum([1 if arg else 0 for arg in [cmd_args.configure, cmd_args.scan, cmd_args.uninstall]])
+        if count > 1:
+            print_error('Cannot specify multiple top-level commands (configure, scan, uninstall)')
             return
         if cmd_args.configure:
             config = ScanInPlexConfiguration(cmd_args)
@@ -76,6 +81,8 @@ class ScanInPlexRouter:
             scanner = ScanInPlex(cmd_args)
             if scanner.valid:
                 scanner.scan()
+        elif cmd_args.uninstall:
+            Uninstall.UninstallScanInPlex(cmd_args).run()
 
 def print_error(msg):
     print(f'ERROR: {msg}')

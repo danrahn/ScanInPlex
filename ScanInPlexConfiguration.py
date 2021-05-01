@@ -6,6 +6,7 @@ import requests
 import shutil
 import urllib
 import yaml
+import ScanInPlexCommon as Common
 
 class ScanInPlexConfiguration:
     def __init__(self, cmd_args):
@@ -14,7 +15,7 @@ class ScanInPlexConfiguration:
     def get_config(self, cmd_args):
         """Reads the config file from disk, asking the user for input for any missing items"""
 
-        config_file = adjacent_file('config.yml')
+        config_file = Common.adjacent_file('config.yml')
         config = None
         if not os.path.exists(config_file):
             print('WARN: Could not fine config.yml in the same directory as this script. Falling back to commandline/user input')
@@ -35,11 +36,7 @@ class ScanInPlexConfiguration:
         self.pms_path = None
         self.pyw_path = None
 
-        self.is_admin = False
-        try:
-            self.is_admin = ctypes.windll.shell32.IsUserAnAdmin()
-        except:
-            pass
+        self.is_admin = Common.is_admin()
 
         if not self.quiet:
             print('\n\nWelcome to the Scan in Plex configuration.\n')
@@ -73,7 +70,7 @@ class ScanInPlexConfiguration:
                     print(f'    {section_path}')
                 print()
 
-            if not self.get_yes_no('Do you want to use these mappings'):
+            if not Common.get_yes_no('Do you want to use these mappings'):
                 print('Exiting...')
                 return
 
@@ -113,7 +110,7 @@ class ScanInPlexConfiguration:
         icon_path = self.get_pms_path()
         applies_to = self.get_appliesTo_path(sections)
         pythonw_path = self.get_pythonw_path()
-        scan_in_plex = adjacent_file('ScanInPlex.py')
+        scan_in_plex = Common.adjacent_file('ScanInPlex.py')
         
         if self.is_admin:
             return self.create_registry_entries_as_admin(base_key, icon_path, applies_to, pythonw_path, scan_in_plex)
@@ -138,7 +135,7 @@ class ScanInPlexConfiguration:
             for cmd in commands:
                 print(cmd)
             print()
-            if not self.get_yes_no('Do you want to make the above registry changes'):
+            if not Common.get_yes_no('Do you want to make the above registry changes'):
                 print ('Exiting...')
                 return False
 
@@ -176,7 +173,7 @@ class ScanInPlexConfiguration:
         if self.verbose:
             print('\n\nRegistry modifications:\n')
             print(f'{text}')
-            if not self.get_yes_no('Do you want to make the above registry changes'):
+            if not Common.get_yes_no('Do you want to make the above registry changes'):
                 print('Exiting...')
                 return False
 
@@ -202,11 +199,13 @@ class ScanInPlexConfiguration:
             'exe' : self.get_scanner_path(),
             'sections' : sections
         }
-        
-        print('Writing config file...', end='', flush=True)
+
+        if not self.quiet:
+            print('Writing config file...', end='', flush=True)
         with open('config.json', 'w') as f:
             json.dump(config, f)
-        print('Done!')
+        if not self.quiet:
+            print('Done!')
 
 
     def get_pms_path(self):
@@ -316,17 +315,3 @@ class ScanInPlexConfiguration:
             sep = '&'
         
         return f'{real_url}{sep}X-Plex-Token={self.token}'
-
-
-    def get_yes_no(self, prompt):
-        while True:
-            response = input(f'{prompt} (y/n)? ')
-            ch = response.lower()[0] if len(response) > 0 else 'x'
-            if ch in ['y', 'n']:
-                return ch == 'y'
-
-
-def adjacent_file(filename):
-    """Returns the full path to the given file assuming it's in the same directory as the script"""
-
-    return os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__))) + os.sep + filename
