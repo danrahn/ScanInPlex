@@ -1,4 +1,5 @@
 import argparse
+import ctypes
 import json
 import os
 import requests
@@ -26,8 +27,33 @@ class ScanInPlexConfiguration:
 
         self.host = self.get_config_value('host', config, cmd_args, 'http://localhost:32400')
         self.token = self.get_config_value('token', config, cmd_args)
+        self.verbose = cmd_args != None and cmd_args.verbose
+        self.quiet = cmd_args != None and cmd_args.quiet
+        if self.verbose and self.quiet:
+            print('WARN: Both --verbose and --quiet specified. Keeping --verbose')
+            self.quiet = False
         self.pms_path = None
         self.pyw_path = None
+
+        self.is_admin = False
+        try:
+            self.is_admin = ctypes.windll.shell32.IsUserAnAdmin()
+        except:
+            pass
+
+        if not self.quiet:
+            print('\n\nWelcome to the Scan in Plex configuration.\n')
+            print('This will scan your Plex library for all folders that hold your media and add')
+            print('context menu entries in Windows Explorer that lets you quickly run partial scans')
+            print('on your media.\n')
+            if self.is_admin:
+                os.system('pause')
+
+        if not self.is_admin and not self.quiet:
+            print('\nNOTE: Script is not running with admin privileges. This script modifies the')
+            print('      registry, which requires elevation. You may see a UAC prompt, as well')
+            print('      as a warning about modifying the registry. This is expected.\n')
+            os.system('pause')
 
 
     def run(self):
@@ -39,23 +65,30 @@ class ScanInPlexConfiguration:
             print('Couldn\'t find any sections. Have you added libraries to Plex?')
             return None
         
-        print('\nFound library mappings:\n')
-        for section in sections:
-            print(f'\tSection {section["section"]}:')
-            for section_path in section['paths']:
-                print(f'\t\t{section_path}')
-            print()
-        
-        if not self.get_yes_no('Do you want to use the following mappings'):
-            print('Exiting...')
-            return
+        if self.verbose:
+            print('\nFound library mappings:\n')
+            for section in sections:
+                print(f'  Section {section["section"]}:')
+                for section_path in section['paths']:
+                    print(f'    {section_path}')
+                print()
 
-        self.create_registry_entries(sections)
-        self.create_mapping_json(sections)
+            if not self.get_yes_no('Do you want to use these mappings'):
+                print('Exiting...')
+                return
+
+        if self.create_registry_entries(sections):
+            self.create_mapping_json(sections)
+            if not self.quiet:
+                print('\nContext menu entries have been added!')
 
 
     def get_library_mappings(self):
+        if not self.quiet:
+            print('Looking for library sections...', end='', flush=True)
         sections = self.get_json_response('/library/sections', { 'X-Plex-Features' : 'external-media,indirect-media' })
+        if not self.quiet:
+            print('Done')
         if sections == None:
             print('Sorry, something went wrong processing library sections. Make sure your host and token are properly set')
             return None
@@ -74,34 +107,94 @@ class ScanInPlexConfiguration:
     def create_registry_entries(self, sections):
         """
         Adds the right registry entries to enable the context menu entries
-        
-        It currently does this by create a temporary .reg file and executing it.
-        It might be cleaner to invoke REG ADD commands via os.system, but this works too
         """
 
-        text  = 'Windows Registry Editor Version 5.00\n\n'
+        base_key = 'HKEY_CLASSES_ROOT\\Directory\\shell\\ScanInPlex'
+        icon_path = self.get_pms_path()
+        applies_to = self.get_appliesTo_path(sections)
+        pythonw_path = self.get_pythonw_path()
+        scan_in_plex = adjacent_file('ScanInPlex.py')
+        
+        if self.is_admin:
+            return self.create_registry_entries_as_admin(base_key, icon_path, applies_to, pythonw_path, scan_in_plex)
+        else:
+            return self.create_registry_entries_from_file(base_key, icon_path, applies_to, pythonw_path, scan_in_plex)
 
-        text += '[HKEY_CLASSES_ROOT\\Directory\\shell\\ScanInPlex]\n'
-        text += '@="Scan in Plex"\n'
-        text += '"Icon"="\\"' + self.get_pms_path().replace('\\', '\\\\') + '\\",0"\n'
-        text += '"AppliesTo"="' + self.get_appliesTo_path(sections) + '"\n' # backslashes must be escaped
-        text += '"MultiSelectModel"="Document"\n\n'
+    def create_registry_entries_as_admin(self, base_key, icon_path, applies_to, pythonw_path, scan_in_plex):
+        """
+        Uses REG ADD to add the right registry keys. Avoids the UAC and registry prompts,
+        but can only be run as an administrator
+        """
+        commands = [
+            f'REG ADD {base_key} /ve /t REG_SZ /d "Scan In Plex"',
+            f'REG ADD {base_key} /v "Icon" /t REG_SZ /d "\\"{icon_path}\\",0"',
+            f'REG ADD {base_key} /v "AppliesTo" /t  REG_SZ /d "{applies_to}"',
+            f'REG ADD {base_key} /v "MultiSelectModel" /t REG_SZ /d "Document"',
+            f'REG ADD {base_key}\\command /ve /t REG_SZ /d "\\"{pythonw_path}\\" \\"{scan_in_plex}\\" -s -d \\"%1\\""'
+        ]
 
-        text += '[HKEY_CLASSES_ROOT\\Directory\\shell\\ScanInPlex\\command]\n'
-        text += '@="\\"' + self.get_pythonw_path().replace('\\', '\\\\') + '\\" \\"' + adjacent_file('ScanInPlex.py').replace('\\', '\\\\') + '\\" -s -d \\"%1\\""\n'
+        if self.verbose:
+            print('\n\nRegistry modifications:\n')
+            for cmd in commands:
+                print(cmd)
+            print()
+            if not self.get_yes_no('Do you want to make the above registry changes'):
+                print ('Exiting...')
+                return False
 
-        print('Adding registry entries. This may launch a UAC dialog...', end='', flush=True)
+        if not self.quiet:
+            print('Adding registry entries...', end='', flush=True)
+        for cmd in commands:
+            os.system(f'{cmd} /f >NUL')
+        if not self.quiet:
+            print('Done!')
+        return True
+
+
+    def create_registry_entries_from_file(self, base_key, icon_path, applies_to, pythonw_path, scan_in_plex):
+        """
+        Adds registry entries by creating a .reg file and executing it. Used as
+        a backup for when the script is not run with administrator privileges
+        """
+
+        # .reg files need extra escapes
+        icon_path = icon_path.replace('\\', '\\\\')
+        pythonw_path = pythonw_path.replace('\\', '\\\\')
+        scan_in_plex = scan_in_plex.replace('\\', '\\\\')
+
+        text  = f'Windows Registry Editor Version 5.00\n\n'
+
+        text += f'[{base_key}]\n'
+        text += f'@="Scan in Plex"\n'
+        text += f'"Icon"="\\"{icon_path}\\",0"\n'
+        text += f'"AppliesTo"="{applies_to}"\n'
+        text += f'"MultiSelectModel"="Document"\n\n'
+
+        text += f'[{base_key}\\command]\n'
+        text += f'@="\\"{pythonw_path}\\" \\"{scan_in_plex}\\" -s -d \\"%1\\""\n'
+
+        if self.verbose:
+            print('\n\nRegistry modifications:\n')
+            print(f'{text}')
+            if not self.get_yes_no('Do you want to make the above registry changes'):
+                print('Exiting...')
+                return False
+
+        if not self.quiet:
+            print('Adding registry entries. This may launch a UAC dialog...', end='', flush=True)
         reg_temp = '_scanInPlex.tmp.reg'
         try:
             with open(reg_temp, 'w') as reg:
                 reg.writelines([text])
         except Exception as e:
-            print('Error adding registry entries:')
+            print('\nError adding registry entries:')
             raise e
         
         os.system(f'.\\{reg_temp}')
         os.remove(reg_temp)
-        print(' Done!')
+        if not self.quiet:
+            print(' Done!')
+        return True
 
 
     def create_mapping_json(self, sections):
@@ -110,9 +203,10 @@ class ScanInPlexConfiguration:
             'sections' : sections
         }
         
-        print('Writing config file...')
+        print('Writing config file...', end='', flush=True)
         with open('config.json', 'w') as f:
             json.dump(config, f)
+        print('Done!')
 
 
     def get_pms_path(self):
@@ -144,7 +238,11 @@ class ScanInPlexConfiguration:
         applies_to = ''
         for section in sections:
             for path in section['paths']:
-                applies_to += ' OR System.ItemPathDisplay:~=\\"' + path.replace('\\', '\\\\') + '\\"'
+                # extra backslashes are needed if we're creating a .reg file
+                final_path = path
+                if not self.is_admin:
+                    final_path = final_path.replace('\\', '\\\\')
+                applies_to += ' OR System.ItemPathDisplay:~=\\"' + final_path + '\\"'
         return applies_to[4:]
 
 

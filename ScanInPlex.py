@@ -48,17 +48,19 @@ class ScanInPlex:
 class ScanInPlexRouter:
     def __init__(self):
         self.valid = True
-        if os.name.lower() == 'windows':
+        if os.name.lower() != 'nt':
             self.valid = False
             print_error(f'os "{os.name}" detected, Windows required.')
             os.system('pause')
             return
     
     def run(self):
-        parser = argparse.ArgumentParser(usage='ScanInPlex.py [-h] [-c [-p HOST] [-t TOKEN]] | [-s -d DIR]')
+        parser = argparse.ArgumentParser(usage='ScanInPlex.py [-h] [-c [-p HOST] [-t TOKEN] [-v | -q]] | [-s -d DIR]')
         parser.add_argument('-c', '--configure', action="store_true", help="Configure ScanInPlex")
         parser.add_argument('-p', '--host', help='Plex host (e.g. http://localhost:32400)')
         parser.add_argument('-t', '--token', help='Plex token')
+        parser.add_argument('-v', '--verbose', action='store_true', help='Show verbose output')
+        parser.add_argument('-q', '--quiet', action='store_true', help='Only show error messages')
 
         parser.add_argument('-s', '--scan', help='Scan a folder in Plex', action="store_true")
         parser.add_argument('-d', '--directory', help='Folder to scan')
@@ -80,7 +82,6 @@ def print_error(msg):
     print(f'Exiting...')
 
 if __name__ == '__main__':
-    print('starting...')
     router = ScanInPlexRouter()
     if router.valid:
         router.run()
