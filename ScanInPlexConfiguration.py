@@ -250,7 +250,7 @@ class Configure:
                 #  1. Display:="C:\Root" for the exact match of the root folder
                 #  2. Display:~="C:\Root\" for all subfolders
                 applies_to += ' OR System.ItemPathDisplay:=\\"' + final_path + '\\"'
-                final_path += '\\\\' if self.is_admin else '\\\\\\\\'
+                final_path += '\\\\'
                 applies_to += ' OR System.ItemPathDisplay:~=\\"' + final_path + '\\"'
         return applies_to[4:]
 
