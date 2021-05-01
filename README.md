@@ -16,5 +16,5 @@ Only two arguments are required, `host` and `token`. They can be specified in th
 
 Value | Command line | Description
 ---|---|---
-host | `-h`, `--host` | The host of the Plex server. Defaults to http://localhost:32400
+host | `--host` | The host of the Plex server. Defaults to http://localhost:32400
 token | `-t`, `--token` | Your Plex token. Se Plex's official documentation for [Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
