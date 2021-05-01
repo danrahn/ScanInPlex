@@ -109,7 +109,7 @@ class Configure:
         icon_path = self.get_pms_path()
         applies_to = self.get_appliesTo_path(sections)
         pythonw_path = self.get_pythonw_path()
-        scanner = Common.adjacent_file('Scanner.py')
+        scanner = Common.adjacent_file('ScanInPlexScanner.py')
         
         if self.is_admin:
             return self.create_registry_entries_as_admin(base_key, icon_path, applies_to, pythonw_path, scanner)
@@ -240,6 +240,17 @@ class Configure:
                 final_path = path
                 if not self.is_admin:
                     final_path = final_path.replace('\\', '\\\\')
+                
+                # Need two entries per path. One to exactly match the root folder, and
+                # another to match subpaths. With only a single entry, there are two possibilities
+                #  1. Display:~="C:\Root", which may incorrect match C:\Root2
+                #  2. Display:~="C:\Root\", which blocks C:\Root2, but also only allows scanning of
+                #     subdirectories of C:\Root, and not C:\Root itself
+                # To get around this have two entries:
+                #  1. Display:="C:\Root" for the exact match of the root folder
+                #  2. Display:~="C:\Root\" for all subfolders
+                applies_to += ' OR System.ItemPathDisplay:=\\"' + final_path + '\\"'
+                final_path += '\\\\' if self.is_admin else '\\\\\\\\'
                 applies_to += ' OR System.ItemPathDisplay:~=\\"' + final_path + '\\"'
         return applies_to[4:]
 

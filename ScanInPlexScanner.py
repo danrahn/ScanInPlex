@@ -35,17 +35,20 @@ class Scanner:
             config_string = ''.join(f.readlines()).lower()
 
         mappings = json.loads(config_string)
-        section = -1
+        section_id = -1
         dir_lower = self.dir.lower()
         for section in mappings['sections']:
             for path in section['paths']:
-                if dir_lower.startswith(path):
-                    section = section['section']
+
+                # Passed in directory must start with one our our root folders, but not make sure to ignore
+                # partial matches (e.g. Z:\Movies2\SomeFolder compared to Z:\Movies)
+                if dir_lower.startswith(path) and (len(dir_lower) == len(path) or dir_lower[len(path)] == '\\'):
+                    section_id = section['section']
                     break
-            if section != -1:
+            if section_id != -1:
                 break
 
-        if section == -1:
+        if section_id == -1:
             return
 
         exe = mappings['exe']
