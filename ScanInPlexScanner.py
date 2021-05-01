@@ -52,7 +52,7 @@ class Scanner:
             return
 
         exe = mappings['exe']
-        cmd = f'"{exe}" -s -c {section} -d "{self.dir}"'
+        cmd = f'"{exe}" -s -c {section_id} -d "{self.dir}"'
         CREATE_NO_WINDOW = 0x08000000 # Don't show any output
         subprocess.call(cmd, creationflags=CREATE_NO_WINDOW)
 
