@@ -2,12 +2,12 @@ import argparse
 import os
 import ScanInPlexCommon as Common
 
-class UninstallScanInPlex:
+class Uninstall:
     def __init__(self, cmd_args=None):
         self.cmd_args = cmd_args
         self.is_admin = Common.is_admin()
     
-    def run(self):
+    def uninstall(self):
         if self.cmd_args == None:
             parser = argparse.ArgumentParser()
             parser.add_argument('-q', '--quiet', help='Don\'t prompt the user to confirm')
@@ -21,14 +21,12 @@ class UninstallScanInPlex:
             print('Uninstall cancelled. Exiting...')
             return
 
-        self.uninstall()
-
-    def uninstall(self):
         if self.is_admin:
             os.system('REG DELETE HKCR\\Directory\\shell\\ScanInPlex /f >NUL')
         else:
             self.uninstall_via_file()
-    
+
+
     def uninstall_via_file(self):
         text  = f'Windows Registry Editor Version 5.00\n\n'
 
@@ -46,5 +44,6 @@ class UninstallScanInPlex:
         os.remove(reg_temp)
         return
 
+
 if __name__ == '__main__':
-    UninstallScanInPlex().run()
+    Uninstall().uninstall()

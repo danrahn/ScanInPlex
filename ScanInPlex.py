@@ -1,10 +1,10 @@
 import argparse
 import json
 import os
-import Scanner
 import ScanInPlexCommon as Common
-from ScanInPlexConfiguration import ScanInPlexConfiguration
-import UninstallScanInPlex as Uninstall
+from ScanInPlexConfiguration import Configure
+from ScanInPlexUninstaller import Uninstall
+from ScanInPlexScanner import Scanner
 import subprocess
 import sys
 import traceback
@@ -39,11 +39,11 @@ class ScanInPlexRouter:
             print_error('Cannot specify multiple top-level commands (configure, scan, uninstall)')
             return
         if cmd_args.configure:
-            ScanInPlexConfiguration(cmd_args).run()
+            Configure(cmd_args).configure()
         elif cmd_args.scan:
-            Scanner.ScanInPlex(cmd_args).scan()
+            Scanner(cmd_args).scan()
         elif cmd_args.uninstall:
-            Uninstall.UninstallScanInPlex(cmd_args).run()
+            Uninstall(cmd_args).uninstall()
 
 def print_error(msg):
     print(f'ERROR: {msg}')

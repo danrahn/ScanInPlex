@@ -8,7 +8,7 @@ import urllib
 import yaml
 import ScanInPlexCommon as Common
 
-class ScanInPlexConfiguration:
+class Configure:
     def __init__(self, cmd_args):
         self.get_config(cmd_args)
 
@@ -53,7 +53,7 @@ class ScanInPlexConfiguration:
             os.system('pause')
 
 
-    def run(self):
+    def configure(self):
         sections = self.get_library_mappings()
         if sections == None:
             return

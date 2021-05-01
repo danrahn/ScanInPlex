@@ -5,7 +5,7 @@ import ScanInPlexCommon as Common
 import subprocess
 import traceback
 
-class ScanInPlex:
+class Scanner:
     def __init__(self, cmd_args=None):
         self.valid = True
         self.cmd_args = cmd_args
@@ -55,4 +55,4 @@ class ScanInPlex:
         subprocess.call(cmd, creationflags=CREATE_NO_WINDOW)
 
 if __name__ == '__main__':
-    ScanInPlex().scan()
+    Scanner().scan()
