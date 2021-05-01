@@ -3,7 +3,6 @@ import json
 import os
 import ScanInPlexCommon as Common
 import subprocess
-import traceback
 
 class Scanner:
     def __init__(self, cmd_args=None):

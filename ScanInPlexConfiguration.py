@@ -1,12 +1,11 @@
 import argparse
-import ctypes
 import json
 import os
 import requests
+import ScanInPlexCommon as Common
 import shutil
 import urllib
 import yaml
-import ScanInPlexCommon as Common
 
 class Configure:
     def __init__(self, cmd_args):

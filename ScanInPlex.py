@@ -1,13 +1,9 @@
 import argparse
-import json
 import os
 import ScanInPlexCommon as Common
 from ScanInPlexConfiguration import Configure
 from ScanInPlexUninstaller import Uninstall
 from ScanInPlexScanner import Scanner
-import subprocess
-import sys
-import traceback
 
 class ScanInPlexRouter:
     def __init__(self):
