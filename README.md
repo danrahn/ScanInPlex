@@ -6,19 +6,19 @@ I don't like having automatic scanning enabled in Plex, but the only manual scan
 
 ![Context Menu](img/context.png)
 
-## Usage
-
-`python ScanInPlex.py -h | -c [-p HOST] [-t TOKEN] [-v] [-q] | -s -d DIRECTORY`
-
-To set up ScanInPlex, run `python ScanInPlex.py -c` (see [Configuration](#Configuration) below)
-
 ## Requirements
 
-Requirements are outlined in requirements.txt, and can be installed via `pip install -r requirements.txt`
+Python 3 and the packages outlined in requirements.txt, which can be installed via `pip install -r requirements.txt`
 
-## Configuration
+## Usage
 
-Only two arguments are required, `host` and `token`. They can be specified in the provided `config.yml` file, or passed in as command line arguments:
+`python ScanInPlex.py -h | -c [-p HOST] [-t TOKEN] [-v] [-q] | -s -d DIRECTORY | -u [-q]`
+
+---
+
+### Configuration (`-c`)
+
+Only two arguments are required, `host` and `token`. They can be specified in the provided `config.yml` file, or passed in as command line arguments. Configuration is best run as administrator. It should still work without elevation, but will result in UAC and regedit prompts, as the registry's HKCR cluster must be edited to add context menu handlers.
 
 Value | Command line | Description
 ---|---|---
@@ -26,6 +26,27 @@ host | `--host` | The host of the Plex server. Defaults to http://localhost:3240
 token | `-t`, `--token` | Your Plex token. See Plex's official documentation for [Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 verbose | `-v`, `--verbose` | Show more details and asks for confirmation before continuing
 quiet | `-q`, `--quiet` | Only show warnings and errors
+
+---
+### Scan (`-s`)
+
+Scanning will be invoked automatically by the context menu handler after going through configuration, but can also be run manually if a directory is provided:
+
+Value | Command line | Description
+---|---|---
+directory | `-d`, `--directory` | Directory to scan in Plex
+
+---
+
+### Uninstall (`-u`)
+
+Uninstalls the script, i.e. deletes the registry keys and %LOCALAPPDATA% files. Like configuration, running the script as an administrator will avoid UAC and regedit dialogs.
+
+Value | Command line | Description
+---|---|---
+quiet | `-q`, `--quiet` | Only show warnings and errors
+
+---
 
 ## Implementation Details
 
