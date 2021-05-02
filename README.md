@@ -12,7 +12,7 @@ Python 3 and the packages outlined in requirements.txt, which can be installed v
 
 ## Usage
 
-`python ScanInPlex.py -h | -c [-p HOST] [-t TOKEN] [-v] [-q] | -s -d DIRECTORY | -u [-q]`
+`python ScanInPlex.py -h | -c [-p HOST] [-t TOKEN] [-v | -q] | -s -d DIRECTORY | -u [-q]`
 
 ---
 
@@ -22,7 +22,7 @@ Only two arguments are required, `host` and `token`. They can be specified in th
 
 Value | Command line | Description
 ---|---|---
-host | `--host` | The host of the Plex server. Defaults to http://localhost:32400
+host | `-p`, `--host` | The host of the Plex server. Defaults to http://localhost:32400
 token | `-t`, `--token` | Your Plex token. See Plex's official documentation for [Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 verbose | `-v`, `--verbose` | Show more details and asks for confirmation before continuing
 quiet | `-q`, `--quiet` | Only show warnings and errors
