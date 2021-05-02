@@ -291,6 +291,7 @@ class Configure:
                     pass
             try:
                 shutil.copy(Common.adjacent_file('ScanInPlexScanner.py'), os.path.join(dst, 'ScanInPlexScanner.py'))
+                shutil.copy(Common.adjacent_file('ScanInPlexCommon.py'), os.path.join(dst, 'ScanInPlexCommon.py'))
                 self.output_path = dst
             except:
                 pass
