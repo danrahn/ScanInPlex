@@ -34,6 +34,7 @@ class Configure:
             self.quiet = False
         self.pms_path = None
         self.pyw_path = None
+        self.output_path = None
 
         self.is_admin = Common.is_admin()
 
@@ -60,7 +61,7 @@ class Configure:
         if len(sections) == 0:
             print('Couldn\'t find any sections. Have you added libraries to Plex?')
             return None
-        
+
         if self.verbose:
             print('\nFound library mappings:\n')
             for section in sections:
@@ -109,8 +110,8 @@ class Configure:
         icon_path = self.get_pms_path()
         applies_to = self.get_appliesTo_path(sections)
         pythonw_path = self.get_pythonw_path()
-        scanner = Common.adjacent_file('ScanInPlexScanner.py')
-        
+        scanner = os.path.join(self.get_output_path(), 'ScanInPlexScanner.py')
+
         if self.is_admin:
             return self.create_registry_entries_as_admin(base_key, icon_path, applies_to, pythonw_path, scanner)
         else:
@@ -185,7 +186,7 @@ class Configure:
         except Exception as e:
             print('\nError adding registry entries:')
             raise e
-        
+
         os.system(f'.\\{reg_temp}')
         os.remove(reg_temp)
         if not self.quiet:
@@ -201,7 +202,7 @@ class Configure:
 
         if not self.quiet:
             print('Writing config file...', end='', flush=True)
-        with open('config.json', 'w') as f:
+        with open(os.path.join(self.get_output_path(), 'config.json'), 'w') as f:
             json.dump(config, f)
         if not self.quiet:
             print('Done!')
@@ -240,7 +241,7 @@ class Configure:
                 final_path = path
                 if not self.is_admin:
                     final_path = final_path.replace('\\', '\\\\')
-                
+
                 # Need two entries per path. One to exactly match the root folder, and
                 # another to match subpaths. With only a single entry, there are two possibilities
                 #  1. Display:~="C:\Root", which may incorrect match C:\Root2
@@ -270,13 +271,43 @@ class Configure:
             self.pyw_path = input('Could not find that file. Please enter the full path to pythonw.exe: ')
         return self.pyw_path
 
+    def get_output_path(self):
+        """
+        Returns (and sets) the output path for the scanner and configuration file.
+        """
+
+        if self.output_path != None:
+            return self.output_path
+
+        # Try moving the important bits to LOCALAPPDATA so we don't rely on
+        # the repository location itself
+        if 'LOCALAPPDATA' in os.environ:
+            dst = os.path.join(os.environ['LOCALAPPDATA'], 'ScanInPlex')
+            if not os.path.exists(dst):
+                try:
+                    os.mkdir(dst)
+                except:
+                    print('Unable to make directory')
+                    pass
+            try:
+                shutil.copy(Common.adjacent_file('ScanInPlexScanner.py'), os.path.join(dst, 'ScanInPlexScanner.py'))
+                self.output_path = dst
+            except:
+                pass
+
+        if self.output_path == None:
+            # We weren't able to save to localappdata
+            print('WARN: Unable to copy files to %LOCALAPPDATA%, using script directory')
+            self.output_path = Common.adjacent_file('')
+
+        return self.output_path
 
     def get_scanner_path(self):
         if self.pms_path != None:
             scanner = os.path.join(self.pms_path[:self.pms_path.rfind(os.sep)], 'Plex Media Scanner.exe')
             if os.path.exists(scanner):
                 return scanner
-        
+
         scanner = input('Could not find Plex Media Scanner.exe, please enter the full path: ')
         while not os.path.exists(scanner):
             scanner = input('That path does not exists, please enter the complete path to Plex Media Scanner.exe: ')
@@ -287,20 +318,20 @@ class Configure:
         cmd_arg = None
         if cmd_args != None and key in cmd_args:
             cmd_arg = cmd_args.__dict__[key]
-        
+
         if key in config and config[key] != None:
             if cmd_arg != None:
                 # Command-line args shadow config file
                 print(f'WARN: Duplicate argument "{key}" found in both command-line arguments and config file. Using command-line value ("{cmd_args.__dict__[key]}")')
                 return cmd_arg
             return config[key]
-        
+
         if cmd_arg != None:
             return cmd_arg
 
         if len(default) != 0:
             return default
-        
+
         return input(f'\nCould not find "{key}" and no default is available.\n\nPlease enter a value for "{key}": ')
 
 
@@ -323,5 +354,5 @@ class Configure:
         for key, value in params.items():
             real_url += f'{sep}{key}={urllib.parse.quote(value)}'
             sep = '&'
-        
+
         return f'{real_url}{sep}X-Plex-Token={self.token}'

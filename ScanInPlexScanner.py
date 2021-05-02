@@ -18,7 +18,7 @@ class Scanner:
             return
 
         self.dir = self.cmd_args.directory
-    
+
     def scan(self):
         """
         Attempts to scan the passed in library. Fails silently

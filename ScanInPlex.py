@@ -13,7 +13,7 @@ class ScanInPlexRouter:
             print_error(f'os "{os.name}" detected, Windows required.')
             os.system('pause')
             return
-    
+
     def run(self):
         if not self.valid:
             return
