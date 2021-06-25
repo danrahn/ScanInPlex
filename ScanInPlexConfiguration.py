@@ -29,6 +29,7 @@ class Configure:
         self.token = self.get_config_value('token', config, cmd_args)
         self.verbose = cmd_args != None and cmd_args.verbose
         self.quiet = cmd_args != None and cmd_args.quiet
+        self.web = cmd_args != None and cmd_args.web
         if self.verbose and self.quiet:
             print('WARN: Both --verbose and --quiet specified. Keeping --verbose')
             self.quiet = False
@@ -197,8 +198,12 @@ class Configure:
     def create_mapping_json(self, sections):
         config = {
             'exe' : self.get_scanner_path(),
-            'sections' : sections
+            'sections' : sections,
         }
+
+        if self.web:
+            config['host'] = self.host
+            config['token'] = self.token
 
         if not self.quiet:
             print('Writing config file...', end='', flush=True)

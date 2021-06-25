@@ -24,6 +24,7 @@ Value | Command line | Description
 ---|---|---
 host | `-p`, `--host` | The host of the Plex server. Defaults to http://localhost:32400
 token | `-t`, `--token` | Your Plex token. See Plex's official documentation for [Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
+web | `-w`, `--web` | Attempt to use the Plex Web API instead of invoking Plex Media Scanner.exe. May help with scanning some libraries that for some reason or another the exe fails to update, but stores your Plex authentication token in plain text.
 verbose | `-v`, `--verbose` | Show more details and asks for confirmation before continuing
 quiet | `-q`, `--quiet` | Only show warnings and errors
 

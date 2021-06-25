@@ -17,10 +17,11 @@ class ScanInPlexRouter:
     def run(self):
         if not self.valid:
             return
-        parser = argparse.ArgumentParser(usage='ScanInPlex.py [-h] [-c [-p HOST] [-t TOKEN] [-v | -q]] | [-s -d DIR] | -u [-q]')
+        parser = argparse.ArgumentParser(usage='ScanInPlex.py [-h] [-c [-p HOST] [-t TOKEN] [-w] [-v | -q]] | [-s -d DIR] | -u [-q]')
         parser.add_argument('-c', '--configure', action="store_true", help="Configure ScanInPlex")
         parser.add_argument('-p', '--host', help='Plex host (e.g. http://localhost:32400)')
         parser.add_argument('-t', '--token', help='Plex token')
+        parser.add_argument('-w', '--web', action='store_true', help='Scan via web requests instead of Plex Media Scanner.exe. NOTE: this will store your Plex authentication token in plain text')
         parser.add_argument('-v', '--verbose', action='store_true', help='Show verbose output')
         parser.add_argument('-q', '--quiet', action='store_true', help='Only show error messages')
 
