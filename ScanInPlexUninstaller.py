@@ -33,6 +33,7 @@ class Uninstall:
                     errors = True
         if self.is_admin:
             os.system('REG DELETE HKCR\\Directory\\shell\\ScanInPlex /f >NUL')
+            os.system('REG DELETE HKCR\\Directory\\shell\\RefreshInPlex /f >NUL')
         else:
             errors = errors or not self.uninstall_via_file()
 
@@ -44,6 +45,7 @@ class Uninstall:
         text  = f'Windows Registry Editor Version 5.00\n\n'
 
         text += f'[-HKEY_CLASSES_ROOT\\Directory\\shell\\ScanInPlex]\n'
+        text += f'[-HKEY_CLASSES_ROOT\\Directory\\shell\\RefreshInPlex]\n'
 
         reg_temp = '_uninstall.tmp.reg'
         try:

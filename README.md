@@ -25,6 +25,7 @@ Value | Command line | Description
 host | `-p`, `--host` | The host of the Plex server. Defaults to http://localhost:32400
 token | `-t`, `--token` | Your Plex token. See Plex's official documentation for [Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 web | `-w`, `--web` | Attempt to use the Plex Web API instead of invoking Plex Media Scanner.exe. May help with scanning some libraries that for some reason or another the exe fails to update, but stores your Plex authentication token in plain text.
+add_refresh | `-r`, `--add_refresh` | Add a 'Refresh Metadata' option in addition to 'Scan in Plex'. Note that this isn't very efficient. It will load every item in a library and check whether its file path matches the given directory.
 verbose | `-v`, `--verbose` | Show more details and asks for confirmation before continuing
 quiet | `-q`, `--quiet` | Only show warnings and errors
 
@@ -36,6 +37,7 @@ Scanning will be invoked automatically by the context menu handler after going t
 Value | Command line | Description
 ---|---|---
 directory | `-d`, `--directory` | Directory to scan in Plex
+refresh | `-r`, `--refresh` | Refresh metadata for items in the given directory instead of scanning
 
 ---
 
@@ -54,4 +56,4 @@ quiet | `-q`, `--quiet` | Only show warnings and errors
 This script has three main parts:
 1. Query your Plex server to grab all your library sections and the folders mapped to those sections.
 2. Create the necessary registry entries to [create the shortcut menu handlers](https://docs.microsoft.com/en-us/windows/win32/shell/context-menu-handlers).
-3. Create a configuration file that ScanInPlex will reference to properly invoke `Plex Media Scanner.exe`.
+3. Create a configuration file that ScanInPlex will reference to properly invoke `Plex Media Scanner.exe` or the web API.

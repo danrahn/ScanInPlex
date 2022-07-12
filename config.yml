@@ -1,2 +1,4 @@
 host: http://localhost:32400
-token: 
+token:
+web: True
+add_refresh: False

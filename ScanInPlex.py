@@ -22,11 +22,13 @@ class ScanInPlexRouter:
         parser.add_argument('-p', '--host', help='Plex host (e.g. http://localhost:32400)')
         parser.add_argument('-t', '--token', help='Plex token')
         parser.add_argument('-w', '--web', action='store_true', help='Scan via web requests instead of Plex Media Scanner.exe. NOTE: this will store your Plex authentication token in plain text')
+        parser.add_argument('-r', '--add_refresh', action='store_true', help='Also add "Refresh Metadata" context item. Implies --web')
         parser.add_argument('-v', '--verbose', action='store_true', help='Show verbose output')
         parser.add_argument('-q', '--quiet', action='store_true', help='Only show error messages')
 
         parser.add_argument('-s', '--scan', help='Scan a folder in Plex', action="store_true")
         parser.add_argument('-d', '--directory', help='Folder to scan')
+        parser.add_argument('--refresh_metadata', action='store_true', help='Refresh metadata for a folder instead of scanning')
 
         parser.add_argument('-u', '--uninstall', action="store_true", help='Uninstall Scan in Plex (delete regkeys)')
 

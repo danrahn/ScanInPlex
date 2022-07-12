@@ -29,7 +29,8 @@ class Configure:
         self.token = self.get_config_value('token', config, cmd_args)
         self.verbose = cmd_args != None and cmd_args.verbose
         self.quiet = cmd_args != None and cmd_args.quiet
-        self.web = cmd_args != None and cmd_args.web
+        self.refresh = self.get_config_value('add_refresh', config, cmd_args, False)
+        self.web = self.refresh or self.get_config_value('web', config, cmd_args, True)
         if self.verbose and self.quiet:
             print('WARN: Both --verbose and --quiet specified. Keeping --verbose')
             self.quiet = False
@@ -98,7 +99,7 @@ class Configure:
             return None
 
         for section in sections['Directory']:
-            mappings.append({ 'section' : section['key'], 'paths' : [entry['path'] for entry in section['Location']] })
+            mappings.append({ 'section' : section['key'], 'type' : section['type'], 'paths' : [entry['path'] for entry in section['Location']] })
         return mappings
 
 
@@ -130,6 +131,16 @@ class Configure:
             f'REG ADD {base_key} /v "MultiSelectModel" /t REG_SZ /d "Document"',
             f'REG ADD {base_key}\\command /ve /t REG_SZ /d "\\"{pythonw_path}\\" \\"{scanner}\\" -d \\"%1\\""'
         ]
+
+        if self.refresh:
+            refresh_base = base_key.replace('ScanInPlex', 'RefreshInPlex')
+            commands.extend([
+                f'REG ADD {refresh_base} /ve /t REG_SZ /d "Refresh Plex Metadata"',
+                f'REG ADD {refresh_base} /v "Icon" /t REG_SZ /d "\\"{icon_path}\\",0"',
+                f'REG ADD {refresh_base} /v "AppliesTo" /t  REG_SZ /d "{applies_to}"',
+                f'REG ADD {refresh_base} /v "MultiSelectModel" /t REG_SZ /d "Document"',
+                f'REG ADD {refresh_base}\\command /ve /t REG_SZ /d "\\"{pythonw_path}\\" \\"{scanner}\\" -r -d \\"%1\\""'
+            ])
 
         if self.verbose:
             print('\n\nRegistry modifications:\n')
@@ -170,6 +181,17 @@ class Configure:
 
         text += f'[{base_key}\\command]\n'
         text += f'@="\\"{pythonw_path}\\" \\"{scanner}\\" -d \\"%1\\""\n'
+
+        if self.refresh:
+            refresh_base = base_key.replace('ScanInPlex', 'RefreshInPlex')
+            text += f'\n[{refresh_base}]\n'
+            text += f'@="Refresh Plex Metadata"\n'
+            text += f'"Icon"="\\"{icon_path}\\",0"\n'
+            text += f'"AppliesTo"="{applies_to}"\n'
+            text += f'"MultiSelectModel"="Document"\n\n'
+
+            text += f'[{refresh_base}\\command]\n'
+            text += f'@="\\"{pythonw_path}\\" \\"{scanner}\\" -r -d \\"%1\\""\n'
 
         if self.verbose:
             print('\n\nRegistry modifications:\n')
