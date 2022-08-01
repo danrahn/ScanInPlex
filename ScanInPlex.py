@@ -37,6 +37,9 @@ class ScanInPlexRouter:
         if count > 1:
             print_error('Cannot specify multiple top-level commands (configure, scan, uninstall)')
             return
+        if count == 0:
+            print_error('No top-level command specified (configure (-c), scan (-s), uninstall (-u))')
+            return
         if cmd_args.configure:
             Configure(cmd_args).configure()
         elif cmd_args.scan:
