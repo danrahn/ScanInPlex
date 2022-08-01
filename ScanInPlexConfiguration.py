@@ -348,7 +348,7 @@ class Configure:
             cmd_arg = cmd_args.__dict__[key]
 
         if key in config and config[key] != None:
-            if cmd_arg != None:
+            if cmd_arg != None and cmd_arg != False: # for store_true values, False indicates it's not present
                 # Command-line args shadow config file
                 print(f'WARN: Duplicate argument "{key}" found in both command-line arguments and config file. Using command-line value ("{cmd_args.__dict__[key]}")')
                 return cmd_arg
