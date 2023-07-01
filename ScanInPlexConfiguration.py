@@ -30,7 +30,7 @@ class Configure:
         self.verbose = cmd_args != None and cmd_args.verbose
         self.quiet = cmd_args != None and cmd_args.quiet
         self.refresh = self.get_config_value('add_refresh', config, cmd_args, False)
-        self.web = self.refresh or self.get_config_value('web', config, cmd_args, True)
+        self.web = self.refresh or not self.get_config_value('noweb', config, cmd_args, True)
         if self.verbose and self.quiet:
             print('WARN: Both --verbose and --quiet specified. Keeping --verbose')
             self.quiet = False

@@ -24,7 +24,7 @@ Value | Command line | Description
 ---|---|---
 host | `-p`, `--host` | The host of the Plex server. Defaults to http://localhost:32400
 token | `-t`, `--token` | Your Plex token. See Plex's official documentation for [Finding an authentication token](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
-web | `-w`, `--web` | Attempt to use the Plex Web API instead of invoking Plex Media Scanner.exe. May help with scanning some libraries that for some reason or another the exe fails to update, but stores your Plex authentication token in plain text.
+web | `-w`, `--noweb` | Invoke `Plex Media Scanner.exe` instead of the web API. Avoids storing your Plex token in plaintext, but is generally less reliable and the command line option is deprecated by Plex.
 add_refresh | `-r`, `--add_refresh` | Add a 'Refresh Metadata' option in addition to 'Scan in Plex'. Note that this isn't very efficient. It will load every item in a library and check whether its file path matches the given directory.
 verbose | `-v`, `--verbose` | Show more details and asks for confirmation before continuing
 quiet | `-q`, `--quiet` | Only show warnings and errors

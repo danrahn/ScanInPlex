@@ -88,10 +88,12 @@ class Scanner:
         token = mappings['token']
         host = mappings['host']
         media_type = 1 # Default to refreshing individual movies
+        refresh_key = 'ratingKey'
         if section['type'] == 'show':
             media_type = 4 # Refresh individual episodes
         elif section['type'] == 'artist':
-            media_type = 9 # Refresh albums
+            media_type = 10 # Refresh albums, but need to grab individual tracks to get file paths. This is slow.
+            refresh_key = 'parentRatingKey'
         # Photo albums don't work. This should probably be filtered out during configuration.
 
         url = f'{host}/library/sections/{section["section"]}/all?type={media_type}&X-Plex-Token={token}'
@@ -109,7 +111,7 @@ class Scanner:
 
         refreshed = set()
         for item in json_response['Metadata']:
-            metadata_id = int(item['ratingKey'])
+            metadata_id = int(item[refresh_key])
             if metadata_id in refreshed:
                 continue
 
