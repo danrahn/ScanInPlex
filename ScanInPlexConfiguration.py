@@ -125,7 +125,7 @@ class Configure:
         but can only be run as an administrator
         """
         commands = [
-            f'REG ADD {base_key} /ve /t REG_SZ /d "Scan In Plex"',
+            f'REG ADD {base_key} /ve /t REG_SZ /d "Scan In Ple&x"',
             f'REG ADD {base_key} /v "Icon" /t REG_SZ /d "\\"{icon_path}\\",0"',
             f'REG ADD {base_key} /v "AppliesTo" /t  REG_SZ /d "{applies_to}"',
             f'REG ADD {base_key} /v "MultiSelectModel" /t REG_SZ /d "Document"',
